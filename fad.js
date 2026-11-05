@@ -203,8 +203,8 @@ const FAD = (() => {
     function renderReveal(S) {
       const c = S.cur, on = S.view === 'reveal' && c && S.stage > 0;
       const L = S.lay;
-      rv.style.left = (L.rx - 540) + 'px';
-      rv.style.top = (L.ry - 620) + 'px';
+      rv.style.left = (L.rx - 830) + 'px';
+      rv.style.top = (L.ry - 360) + 'px';
       rv.style.transform = `scale(${L.rs})`;
       if (!on) { if (rvStage > 0) rv.classList.add('gone'); rvStage = 0; return; }
       const key = `${c.id}|${c.n}`;
@@ -247,7 +247,7 @@ const FAD = (() => {
       rv.classList.add(want);
       rvKey = key; rvStage = S.stage;
       requestAnimationFrame(() => {
-        fitText($('.rv-player .ln'), 46); fitText($('.rv-team .ln'), 44);
+        fitText($('.rv-player .ln'), 58); fitText($('.rv-team .ln'), 58);
         // one row of superlatives: drop whatever doesn't fit (they're ordered best-first)
         const sup = $('.rv-player .sup'), w = sup.clientWidth;
         [...sup.children].forEach(e => { if (w && e.offsetLeft + e.offsetWidth > w + 1) e.remove(); });
