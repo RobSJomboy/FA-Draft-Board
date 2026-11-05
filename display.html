@@ -43,7 +43,7 @@
     if (!s || s.app !== 'fad' || !(s.seq > lastSeq)) return;
     lastSeq = s.seq;
     wait.style.display = 'none';
-    if (params.get('view') === 'board') { s.view = 'board'; s.lay = { ...s.lay, by: 60, bs: 1 }; }
+    if (params.get('view') === 'board') { s.view = 'board'; s.bstyle = 'full'; s.lay = { ...s.lay, bx: 960, by: 60, bs: 1 }; }
     if (params.get('bg')) s.bg = params.get('bg');
     document.fonts.ready.then(() => stage.render(s));
   }

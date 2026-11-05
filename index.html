@@ -213,6 +213,7 @@
         <div class="air" id="air"><button data-v="off">Nothing</button><button data-v="reveal">Pick reveal</button><button data-v="board">Draft board</button></div>
         <div class="row" style="margin-top:10px">
           <span class="k">Board shows</span><select id="focus" style="flex:1"></select>
+          <select id="bstyle"><option value="strip">Wide · under Jake's mic</option><option value="full">Full screen</option></select>
         </div>
         <div class="row">
           <button class="plain" id="clockBtn" style="flex:1">On-the-clock bug: off</button>
@@ -225,8 +226,9 @@
         <div class="sl"><span class="k">Reveal X</span><input type="range" id="rx" min="560" max="1360" step="5"><output></output></div>
         <div class="sl"><span class="k">Reveal Y</span><input type="range" id="ry" min="360" max="1080" step="5"><output></output></div>
         <div class="sl"><span class="k">Reveal size</span><input type="range" id="rs" min="0.5" max="1.3" step="0.01"><output></output></div>
-        <div class="sl"><span class="k">Board Y</span><input type="range" id="by" min="0" max="300" step="5"><output></output></div>
-        <div class="sl"><span class="k">Board size</span><input type="range" id="bs" min="0.5" max="1.25" step="0.01"><output></output></div>
+        <div class="sl"><span class="k">Board X</span><input type="range" id="bX" min="0" max="1920" step="2"><output></output></div>
+        <div class="sl"><span class="k">Board Y</span><input type="range" id="bY" min="0" max="1080" step="2"><output></output></div>
+        <div class="sl"><span class="k">Board size</span><input type="range" id="bS" min="0.5" max="1.4" step="0.01"><output></output></div>
       </div>
     </div>
 
@@ -268,12 +270,12 @@
   const params = new URLSearchParams(location.search);
   const HUB = FAD.hubOf(params);
   const SEASON = +params.get('season') || 2026;
-  const LAY = { rx: 960, ry: 1030, rs: 0.9, by: 40, bs: 1, ck: 'tl' };
+  const LAY = FAD.LAY_DEFAULT;
   const DEF = () => ({
     app: 'fad', room: 'tb-fadraft-' + Math.random().toString(36).slice(2, 7),
     title: 'Free Agent Draft', sub: "Talkin' Baseball · 2026-27 offseason",
     ds: [{ name: 'Jake', color: '#e8772e' }, { name: 'Trev', color: '#2f8fd8' }, { name: 'Jolly', color: '#1d7f45' }, { name: 'Rose', color: '#6b3fa0' }],
-    order: [0, 1, 2, 3], rounds: 8, picks: [], cur: null, stage: 0, view: 'reveal', focus: -1, clock: false, bg: 'clear', lay: { ...LAY },
+    order: [0, 1, 2, 3], rounds: 8, picks: [], cur: null, stage: 0, view: 'reveal', focus: -1, bstyle: 'strip', clock: false, bg: 'clear', lay: { ...LAY },
   });
   const KEY = 'fad-state-v1';
   let S;
@@ -406,7 +408,9 @@
     const f = $('focus'), fo = `<option value="-1">Everybody</option>` + S.order.map(d => `<option value="${d}">${FAD.esc(S.ds[d].name)} only</option>`).join('');
     if (f.dataset.sig !== fo) { f.innerHTML = fo; f.dataset.sig = fo; }
     f.value = S.focus;
-    for (const k of ['rx', 'ry', 'rs', 'by', 'bs']) { $(k).value = S.lay[k]; $(k).nextElementSibling.textContent = k[1] === 's' ? Math.round(S.lay[k] * 100) + '%' : S.lay[k]; }
+    $('bstyle').value = S.bstyle || 'strip';
+    const sliders = { rx: 'rx', ry: 'ry', rs: 'rs', ...boardKeys() };
+    for (const [id, k] of Object.entries(sliders)) { $(id).value = S.lay[k]; $(id).nextElementSibling.textContent = /s$/i.test(id) ? Math.round(S.lay[k] * 100) + '%' : S.lay[k]; }
   }
 
   function renderDs() {
@@ -523,7 +527,11 @@
   $('clockBtn').onclick = () => { S.clock = !S.clock; commit(); };
   $('ckPos').onchange = () => { S.lay.ck = $('ckPos').value; commit(); };
   $('bg').onchange = () => { S.bg = $('bg').value; commit(); };
-  for (const k of ['rx', 'ry', 'rs', 'by', 'bs']) $(k).oninput = () => { S.lay[k] = +$(k).value; commit(); };
+  // the three board sliders drive whichever board style is picked
+  function boardKeys() { return S.bstyle === 'full' ? { bX: 'bx', bY: 'by', bS: 'bs' } : { bX: 'sx', bY: 'sy', bS: 'ss' }; }
+  for (const id of ['rx', 'ry', 'rs']) $(id).oninput = () => { S.lay[id] = +$(id).value; commit(); };
+  for (const id of ['bX', 'bY', 'bS']) $(id).oninput = () => { S.lay[boardKeys()[id]] = +$(id).value; commit(); };
+  $('bstyle').onchange = () => { S.bstyle = $('bstyle').value; commit(); };
   $('layReset').onclick = () => { S.lay = { ...LAY, ck: S.lay.ck }; commit(); };
 
   // contestants

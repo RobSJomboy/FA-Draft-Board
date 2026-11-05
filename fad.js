@@ -175,10 +175,14 @@ const FAD = (() => {
   const ARROW = `<svg viewBox="-4 -4 336 140" class="rv-arrow"><path class="sh" d="M10,52 L214,52 L214,10 L330,72 L214,134 L214,92 L10,92 Z"/><path class="ar" d="M0,42 L204,42 L204,0 L320,62 L204,124 L204,82 L0,82 Z"/></svg>`;
   const MINI = c => `<svg viewBox="0 0 30 20"><path d="M0,7 L18,7 L18,1 L30,10 L18,19 L18,13 L0,13 Z" fill="${c}"/></svg>`;
 
+  // stage positions; the strip board defaults to the lower part of the right-hand (Jake) cam box on the TB two-shot
+  const LAY_DEFAULT = { rx: 960, ry: 980, rs: 0.9, bx: 960, by: 40, bs: 1, sx: 958, sy: 704, ss: 1, ck: 'tl' };
+
   function createStage(host) {
     const el = document.createElement('div');
     el.className = 'fad';
     el.innerHTML = `<div class="backdrop"></div>
+      <div class="bs"><div class="bs-top"><b></b><span><small></small><em></em></span></div><div class="bs-grid"></div></div>
       <div class="bd"><div class="bd-top"><div class="t"><b></b><span></span></div><div class="ct"><small></small><b></b></div></div><div class="bd-body"><div class="bd-grid"></div></div></div>
       <div class="rv">
         <div class="rv-head"><div class="rp"></div><div class="who"><span></span></div></div>
@@ -189,7 +193,8 @@ const FAD = (() => {
       <div class="ck"><div class="bx"><small>ON THE CLOCK</small><b></b></div><div class="pk"><small></small><b></b></div></div>`;
     host.appendChild(el);
     const $ = s => el.querySelector(s);
-    const rv = $('.rv'), bd = $('.bd'), ck = $('.ck');
+    const rv = $('.rv'), bd = $('.bd'), bs = $('.bs'), ck = $('.ck');
+    let bsSig = '', bsLast = 0;
     let rvKey = '', rvStage = -1, bdSig = '', lastPicks = 0;
 
     function fitText(node, max) {           // shrink long last names to the plate
@@ -267,9 +272,53 @@ const FAD = (() => {
       </div>`;
     }
 
+    // who drafts where: each contestant's picks in order, plus the overall pick number of every slot they own
+    function columns(S) {
+      const N = total(S);
+      const cols = S.order.map(d => ({ d, picks: [], nums: [] }));
+      for (let n = 0; n < N; n++) { const s = slot(n, S.order); cols.find(c => c.d === s.d).nums.push(n); }
+      S.picks.forEach(p => { const c = cols.find(c => c.d === p.d); if (c) c.picks.push(p); });
+      return cols;
+    }
+
+    // ── wide, short board: one row per contestant, picks running left to right ──
+    function stripCell(p, n, S, isClock) {
+      if (!p) return isClock ? `<div class="sc clock"><span>ON THE<br>CLOCK</span></div>` : `<div class="sc empty"><span>#${n + 1}</span></div>`;
+      const from = team(p.from), stays = p.to && p.to === p.from;
+      return `<div class="sc filled${n === S.picks.length - 1 && S.picks.length > bsLast ? ' fresh' : ''}${stays ? ' stays' : ''}">
+        <div class="ic"><div class="hs" style="--tc:${from.color}"><img src="${headshot(p.id, 120)}" alt=""></div>${MINI('#c8102e')}<div class="lg">${p.to ? `<img src="${logo(p.to)}" alt="">` : ''}</div></div>
+        <b>${esc(p.last || p.name)}</b>${p.yrs ? `<i>${p.yrs}Y</i>` : ''}</div>`;
+    }
+    function renderStrip(S) {
+      const on = S.view === 'board' && S.bstyle !== 'full';
+      bs.classList.toggle('on', on);
+      bs.style.left = S.lay.sx + 'px'; bs.style.top = S.lay.sy + 'px';
+      bs.style.transform = `scale(${S.lay.ss})`;
+      const sig = JSON.stringify([S.ds, S.order, S.rounds, S.picks, S.title, S.focus]);
+      if (sig === bsSig) return;
+      bsSig = sig;
+      const N = total(S), next = S.picks.length, nx = next < N ? slot(next, S.order) : null;
+      const cols = columns(S), solo = S.focus >= 0 && cols.find(c => c.d === S.focus);
+      $('.bs-top b').textContent = solo ? `${S.ds[solo.d].name}'s board` : (S.title || 'Free Agent Draft');
+      $('.bs-top small').textContent = nx ? `PICK ${next + 1} OF ${N} · ON THE CLOCK` : `${N} PICKS`;
+      $('.bs-top em').textContent = nx ? (S.ds[nx.d]?.name || '') : 'DONE';
+      const grid = $('.bs-grid');
+      bs.classList.toggle('solo', !!solo);
+      if (solo) {
+        grid.style.gridTemplateColumns = `repeat(${Math.ceil(S.rounds / 2)}, 1fr)`;
+        grid.innerHTML = solo.nums.map((n, r) => stripCell(solo.picks[r], n, S, n === next)).join('');
+      } else {
+        grid.style.gridTemplateColumns = `118px repeat(${S.rounds}, 1fr)`;
+        grid.innerHTML = cols.map(c => `<div class="sn${nx && nx.d === c.d ? ' up' : ''}">${esc(S.ds[c.d].name)}</div>` +
+          c.nums.map((n, r) => stripCell(c.picks[r], n, S, n === next)).join('')).join('');
+      }
+      bsLast = S.picks.length;
+    }
+
     function renderBoard(S) {
-      const on = S.view === 'board';
+      const on = S.view === 'board' && S.bstyle === 'full';
       bd.classList.toggle('on', on);
+      bd.style.left = S.lay.bx + 'px';
       bd.style.top = S.lay.by + 'px';
       bd.style.transform = `translateX(-50%) scale(${S.lay.bs})`;
       const sig = JSON.stringify([S.ds, S.order, S.rounds, S.picks, S.title, S.sub, S.focus]);
@@ -281,10 +330,7 @@ const FAD = (() => {
       $('.bd-top .t span').textContent = S.sub || '';
       $('.bd-top .ct small').textContent = nx ? `PICK ${next + 1} OF ${N} · ON THE CLOCK` : `${N} PICKS`;
       $('.bd-top .ct b').textContent = nx ? (S.ds[nx.d]?.name || '') : 'Draft complete';
-      // each contestant's picks in the order they made them, plus the overall pick number of every slot
-      const cols = S.order.map(d => ({ d, picks: [], nums: [] }));
-      for (let n = 0; n < N; n++) { const s = slot(n, S.order); cols.find(c => c.d === s.d).nums.push(n); }
-      S.picks.forEach(p => { const c = cols.find(c => c.d === p.d); if (c) c.picks.push(p); });
+      const cols = columns(S);
       const grid = $('.bd-grid');
       const solo = S.focus >= 0 && cols.find(c => c.d === S.focus);
       bd.classList.toggle('solo', !!solo);
@@ -319,7 +365,9 @@ const FAD = (() => {
 
     function render(S) {
       el.classList.toggle('paper', S.bg === 'paper');
+      S.lay = { ...LAY_DEFAULT, ...(S.lay || {}) };
       renderBoard(S);
+      renderStrip(S);
       renderReveal(S);
       renderClock(S);
     }
@@ -373,5 +421,5 @@ const FAD = (() => {
     setInterval(poll, 30000);
   }
 
-  return { loadStandings, TEAMS, TEAM_IDS, team, logo, headshot, esc, slot, total, yrsText, TAGS, loadPool, search, createStage, hubOf, publisher, subscribe, fetchRoom };
+  return { LAY_DEFAULT, loadStandings, TEAMS, TEAM_IDS, team, logo, headshot, esc, slot, total, yrsText, TAGS, loadPool, search, createStage, hubOf, publisher, subscribe, fetchRoom };
 })();
