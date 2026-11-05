@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Agent Draft · Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fad.css">
+<style>
+  :root { --line: rgba(19,41,75,.22); --sh: 3px 3px 0 rgba(15,39,66,.32); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--paper); color: var(--ink); font: 500 15px/1.35 'Barlow', sans-serif; min-height: 100vh;
+    background-image: repeating-linear-gradient(0deg, rgba(23,58,94,.035) 0 1px, transparent 1px 32px), repeating-linear-gradient(90deg, rgba(23,58,94,.035) 0 1px, transparent 1px 32px); }
+  button, input, select { font: inherit; color: inherit; }
+  button { font: 600 16px/1 var(--cond); letter-spacing: .06em; text-transform: uppercase; background: var(--navy); color: var(--paper);
+    border: 0; padding: 9px 13px 8px; cursor: pointer; box-shadow: var(--sh); }
+  button:hover { background: var(--navy-dk); }
+  button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(15,39,66,.32); }
+  button:disabled { opacity: .35; cursor: default; transform: none; }
+  button.gold { background: var(--gold); color: var(--ink); }
+  button.gold:hover { background: #f3c85e; }
+  button.red { background: var(--red); }
+  button.red:hover { background: var(--red-dk); }
+  button.plain { background: var(--paper); color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+  button.plain:hover { background: var(--paper2); }
+  button.on { background: var(--gold); color: var(--ink); box-shadow: inset 0 0 0 3px var(--ink); }
+  input[type=text], input[type=number], select { background: #fffdf7; border: 2px solid var(--ink); padding: 7px 9px; min-width: 0; border-radius: 0; }
+  input:focus, select:focus, button:focus-visible { outline: 3px solid var(--gold); outline-offset: 1px; }
+  input[type=range] { accent-color: var(--navy); }
+
+  header { background: var(--navy); border-bottom: 6px solid var(--gold); color: var(--paper); display: flex; align-items: center; gap: 18px;
+    padding: 10px 18px; flex-wrap: wrap; position: sticky; top: 0; z-index: 20; }
+  header h1 { margin: 0; font: 700 30px/1 var(--head); text-transform: uppercase; letter-spacing: .02em; }
+  header h1 small { font: 600 15px/1 var(--cond); letter-spacing: .16em; color: var(--tan); margin-left: 10px; }
+  header .conn { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  header .conn label { font: 600 14px var(--cond); letter-spacing: .14em; color: var(--tan); }
+  header .conn input { background: var(--navy-dk); color: var(--paper); border-color: var(--tan); width: 190px; }
+  header .conn button { box-shadow: none; }
+  #net { font: 600 15px var(--cond); letter-spacing: .06em; min-width: 200px; }
+  #net.ok { color: #9be3b0; } #net.bad { color: #ff9a9a; }
+
+  main { display: grid; grid-template-columns: 360px minmax(440px, 1fr) minmax(520px, 640px); gap: 16px; padding: 16px; align-items: start; }
+  @media (max-width: 1400px) { main { grid-template-columns: 340px 1fr; } .col3 { grid-column: 1 / -1; } }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .box { background: #fffdf7; border: 3px solid var(--ink); box-shadow: 6px 6px 0 rgba(15,39,66,.18); margin-bottom: 16px; }
+  .box > h2 { margin: 0; background: var(--paper2); border-bottom: 3px solid var(--ink); font: 700 18px/1 var(--head); text-transform: uppercase;
+    letter-spacing: .05em; padding: 9px 12px 7px; display: flex; align-items: center; gap: 10px; }
+  .box > h2 small { font: 600 14px var(--cond); letter-spacing: .08em; color: #5d6e82; margin-left: auto; text-transform: uppercase; }
+  .pad { padding: 12px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row + .row { margin-top: 8px; }
+  .k { font: 600 14px var(--cond); letter-spacing: .12em; text-transform: uppercase; color: #5d6e82; }
+  .hint { font-size: 13px; color: #5d6e82; margin-top: 6px; }
+
+  /* on the clock */
+  .clockbox { display: flex; align-items: stretch; border: 3px solid var(--ink); box-shadow: 6px 6px 0 rgba(15,39,66,.18); margin-bottom: 16px; background: var(--navy); }
+  .clockbox .bar { width: 14px; background: var(--acc, var(--gold)); }
+  .clockbox .main { flex: 1; padding: 10px 14px 9px; color: var(--paper); border-bottom: 5px solid var(--gold); }
+  .clockbox small { font: 700 14px var(--cond); letter-spacing: .2em; color: var(--gold); }
+  .clockbox b { display: block; font: 700 40px/1.05 var(--head); text-transform: uppercase; }
+  .clockbox .pk { background: var(--paper); padding: 8px 14px; display: flex; flex-direction: column; justify-content: center; text-align: right; }
+  .clockbox .pk b { font-size: 34px; color: var(--ink); }
+  .clockbox .pk small { color: #5d6e82; }
+  .clockbox.edit { background: var(--red-dk); }
+
+  /* pool */
+  .tabs { display: flex; gap: 0; }
+  .tabs button { box-shadow: inset 0 0 0 2px var(--ink); background: var(--paper); color: var(--ink); flex: 1; padding: 7px 6px 6px; }
+  .tabs button + button { margin-left: -2px; }
+  .tabs button.on { background: var(--ink); color: var(--paper); }
+  #pool { max-height: calc(100vh - 380px); min-height: 300px; overflow-y: auto; border-top: 3px solid var(--ink); }
+  .pl { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .pl:hover { background: var(--paper2); }
+  .pl.sel { background: var(--gold); }
+  .pl .hs { width: 42px; height: 42px; border-radius: 50%; overflow: hidden; background: var(--tc); border: 2px solid var(--ink); flex: 0 0 auto; }
+  .pl .hs img { width: 100%; height: 118%; object-fit: cover; object-position: 50% 0; }
+  .pl .nm { flex: 1; min-width: 0; }
+  .pl .nm b { display: block; font: 700 18px/1.05 var(--head); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pl .nm span { font: 600 14px var(--cond); letter-spacing: .05em; color: #5d6e82; text-transform: uppercase; }
+  .pl .war { font: 700 18px var(--head); text-align: right; min-width: 40px; }
+  .pl .war small { display: block; font: 600 11px var(--cond); letter-spacing: .12em; color: #5d6e82; }
+  .tg { display: inline-block; font: 700 11px/1 var(--cond); letter-spacing: .08em; padding: 2px 4px 1px; background: var(--ink); color: var(--paper); margin-left: 4px; vertical-align: 2px; }
+  .tg.AS { background: var(--gold); color: var(--ink); }
+  .tg.CY, .tg.MVP { background: var(--red); }
+  .pool-sep { font: 700 13px var(--cond); letter-spacing: .14em; background: var(--paper2); padding: 5px 10px; border-bottom: 1px solid var(--line); }
+
+  /* builder */
+  .chosen { display: flex; gap: 12px; align-items: center; min-height: 86px; }
+  .chosen .hs { width: 80px; height: 80px; border-radius: 50%; overflow: hidden; background: var(--tc, #ccc); border: 3px solid var(--ink); flex: 0 0 auto; }
+  .chosen .hs img { width: 100%; height: 118%; object-fit: cover; object-position: 50% 0; }
+  .chosen b { font: 700 30px/1 var(--head); text-transform: uppercase; display: block; }
+  .chosen span { font: 600 15px var(--cond); letter-spacing: .06em; color: #5d6e82; text-transform: uppercase; }
+  .chosen .sl2 { font: 700 16px var(--cond); letter-spacing: .04em; margin-top: 4px; text-transform: uppercase; }
+  .chosen .sups { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+  .chosen .sups i { font: normal 700 13px/1 var(--cond); letter-spacing: .05em; text-transform: uppercase; background: var(--gold); padding: 3px 5px 2px; }
+  .chosen .sups i.none { background: none; color: #5d6e82; padding-left: 0; }
+  .chosen .empty { font: 600 18px var(--cond); color: #5d6e82; letter-spacing: .05em; }
+  .teams { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .tm { background: #fffdf7; color: var(--ink); box-shadow: inset 0 0 0 2px var(--line); padding: 6px 2px 5px; display: flex; flex-direction: column; align-items: center; gap: 3px; position: relative; }
+  .tm:hover { background: var(--paper2); }
+  .tm img { width: 40px; height: 40px; object-fit: contain; }
+  .tm span { font: 700 13px var(--cond); letter-spacing: .06em; }
+  .tm.home::after { content: 'STAYS'; position: absolute; top: 2px; right: 2px; font: 700 9px/1 var(--cond); letter-spacing: .08em; background: var(--ink); color: var(--paper); padding: 2px 3px 1px; }
+  .tm.on { background: var(--gold); box-shadow: inset 0 0 0 3px var(--ink); }
+  .yrs { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; }
+  .yrs button { padding: 9px 0 8px; font-size: 20px; background: #fffdf7; color: var(--ink); box-shadow: inset 0 0 0 2px var(--line); }
+  .yrs button.on { background: var(--red); color: var(--paper); box-shadow: inset 0 0 0 3px var(--ink); }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 8px; }
+  .steps button { padding: 14px 8px 12px; font-size: 18px; }
+  .steps button em { font-style: normal; display: block; font-size: 13px; letter-spacing: .14em; opacity: .7; margin-bottom: 3px; }
+  .steps button.live { background: var(--gold); color: var(--ink); box-shadow: inset 0 0 0 3px var(--ink), var(--sh); }
+  .lock { width: 100%; padding: 16px 10px 14px; font-size: 24px; }
+
+  /* preview */
+  .pv { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #3d4651;
+    background-image: linear-gradient(135deg, #46505c 25%, transparent 25%, transparent 50%, #46505c 50%, #46505c 75%, transparent 75%); background-size: 28px 28px; }
+  .air { display: flex; gap: 0; }
+  .air button { flex: 1; box-shadow: inset 0 0 0 2px var(--ink); background: var(--paper); color: var(--ink); font-size: 18px; padding: 11px 6px 9px; }
+  .air button + button { margin-left: -2px; }
+  .air button.on { background: var(--red); color: var(--paper); }
+  .sl { display: grid; grid-template-columns: 90px 1fr 46px; gap: 8px; align-items: center; }
+  .sl output { font: 600 14px var(--cond); text-align: right; }
+
+  /* contestants + picks */
+  .ds { display: grid; grid-template-columns: 34px 1fr 30px 30px 34px; gap: 6px; align-items: center; }
+  .ds + .ds { margin-top: 6px; }
+  .ds .n { font: 700 22px var(--head); text-align: center; }
+  .ds button { padding: 6px 0 5px; }
+  .ds input[type=color] { width: 34px; height: 34px; border: 2px solid var(--ink); padding: 0; background: none; }
+  #picks { max-height: 420px; overflow-y: auto; }
+  .pk { display: grid; grid-template-columns: 44px 1fr auto; gap: 8px; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  .pk .no { font: 700 18px var(--head); }
+  .pk .no small { display: block; font: 600 11px var(--cond); letter-spacing: .1em; color: #5d6e82; }
+  .pk .who { font: 700 13px var(--cond); letter-spacing: .1em; text-transform: uppercase; padding-left: 7px; border-left: 6px solid var(--acc); }
+  .pk .what { font: 600 16px var(--cond); text-transform: uppercase; }
+  .pk .what img { width: 22px; height: 22px; vertical-align: -6px; }
+  .pk button { padding: 6px 8px 5px; font-size: 13px; }
+  .pk.editing { background: var(--gold); }
+  .rnd { font: 700 13px var(--cond); letter-spacing: .16em; background: var(--paper2); padding: 4px 10px; border-bottom: 1px solid var(--line); }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 18px;
+    font: 600 17px var(--cond); letter-spacing: .05em; border-bottom: 4px solid var(--gold); opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 50; }
+  .toast.on { opacity: 1; }
+  kbd { font: 600 12px var(--cond); background: var(--paper2); border: 1px solid var(--line); padding: 0 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Free Agent Draft <small>CONTROL</small></h1>
+  <div class="conn">
+    <label for="room">ROOM</label><input type="text" id="room" spellcheck="false">
+    <button id="copyUrl">Copy OBS link</button>
+    <button id="openOut">Open display</button>
+    <span id="net">not sent yet</span>
+  </div>
+</header>
+
+<main>
+  <!-- ── column 1: on the clock + player pool ── -->
+  <section class="col1">
+    <div class="clockbox" id="clockbox"><div class="bar"></div><div class="main"><small id="cbLabel">ON THE CLOCK</small><b id="cbName"></b></div><div class="pk"><small id="cbRd"></small><b id="cbNo"></b></div></div>
+    <div class="box">
+      <h2>Free agent pool <small id="poolCount"></small></h2>
+      <div class="pad">
+        <div class="row"><input type="text" id="q" placeholder="Search a name…" style="flex:1" autocomplete="off" spellcheck="false"></div>
+        <div class="row"><div class="tabs" style="flex:1"><button data-f="all" class="on">All</button><button data-f="bat">Hitters</button><button data-f="pit">Pitchers</button></div></div>
+        <div class="row"><button class="plain" id="mlbSearch" style="flex:1">Search all MLB players</button></div>
+        <div class="hint" id="poolMsg"></div>
+      </div>
+      <div id="pool"></div>
+    </div>
+  </section>
+
+  <!-- ── column 2: build the pick ── -->
+  <section class="col2">
+    <div class="box">
+      <h2 id="bTitle">The pick</h2>
+      <div class="pad">
+        <div class="chosen" id="chosen"></div>
+      </div>
+      <h2>Heading to <small id="toLabel">pick a team</small></h2>
+      <div class="pad"><div class="teams" id="teams"></div></div>
+      <h2>Contract length <small id="yrsLabel"></small></h2>
+      <div class="pad">
+        <div class="yrs" id="yrs"></div>
+        <div class="row" style="margin-top:10px">
+          <span class="k">Other</span><input type="number" id="yrsN" min="1" max="15" style="width:70px">
+          <span class="k">Note</span><input type="text" id="yrsNote" placeholder="optional · e.g. opt-out after yr 2" style="flex:1">
+        </div>
+      </div>
+      <h2>Reveal <small><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> step · <kbd>H</kbd> hide</small></h2>
+      <div class="pad">
+        <div class="steps">
+          <button id="st1"><em>STEP 1</em>Player + arrow</button>
+          <button id="st2"><em>STEP 2</em>Team logo</button>
+          <button id="st3"><em>STEP 3</em>Contract</button>
+          <button class="plain" id="st0"><em>&nbsp;</em>Hide</button>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="gold lock" id="lockBtn">Lock in pick</button></div>
+        <div class="row" id="editRow" style="display:none"><button class="plain" id="cancelEdit" style="flex:1">Cancel edit</button></div>
+        <div class="row"><button class="plain" id="undoBtn" style="flex:1">Undo last pick</button><button class="plain" id="clearB" style="flex:1">Clear the pick</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── column 3: what's on air ── -->
+  <section class="col3">
+    <div class="box">
+      <h2>On air <small id="airLabel"></small></h2>
+      <div class="pv" id="pv"></div>
+      <div class="pad">
+        <div class="air" id="air"><button data-v="off">Nothing</button><button data-v="reveal">Pick reveal</button><button data-v="board">Draft board</button></div>
+        <div class="row" style="margin-top:10px">
+          <span class="k">Board shows</span><select id="focus" style="flex:1"></select>
+        </div>
+        <div class="row">
+          <button class="plain" id="clockBtn" style="flex:1">On-the-clock bug: off</button>
+          <select id="ckPos"><option value="tl">Top left</option><option value="tr">Top right</option><option value="bl">Bottom left</option><option value="br">Bottom right</option></select>
+          <select id="bg"><option value="clear">Transparent</option><option value="paper">Cream backdrop</option></select>
+        </div>
+      </div>
+      <h2>Layout <small><button class="plain" id="layReset" style="padding:4px 8px 3px;font-size:12px;box-shadow:inset 0 0 0 2px var(--ink)">Reset</button></small></h2>
+      <div class="pad">
+        <div class="sl"><span class="k">Reveal X</span><input type="range" id="rx" min="560" max="1360" step="5"><output></output></div>
+        <div class="sl"><span class="k">Reveal Y</span><input type="range" id="ry" min="560" max="1080" step="5"><output></output></div>
+        <div class="sl"><span class="k">Reveal size</span><input type="range" id="rs" min="0.5" max="1.3" step="0.01"><output></output></div>
+        <div class="sl"><span class="k">Board Y</span><input type="range" id="by" min="0" max="300" step="5"><output></output></div>
+        <div class="sl"><span class="k">Board size</span><input type="range" id="bs" min="0.5" max="1.25" step="0.01"><output></output></div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>Contestants &amp; draft order <small>snake · 1-2-3-4-4-3-2-1</small></h2>
+      <div class="pad">
+        <div id="dsList"></div>
+        <div class="row" style="margin-top:12px">
+          <span class="k">Rounds</span><input type="number" id="rounds" min="1" max="20" style="width:70px">
+          <span class="k">Title</span><input type="text" id="title" style="flex:1">
+        </div>
+        <div class="row"><span class="k">Subtitle</span><input type="text" id="sub" style="flex:1"></div>
+        <div class="hint">Names and colors can change any time — picks stay with the contestant, not the name. Arrows set the round-one order.</div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>Picks <small id="pickCount"></small></h2>
+      <div id="picks"></div>
+      <div class="pad">
+        <div class="row">
+          <button class="plain" id="exportBtn" style="flex:1">Save backup</button>
+          <button class="plain" id="importBtn" style="flex:1">Load backup</button>
+          <button class="plain" id="pullBtn" style="flex:1">Pull from relay</button>
+          <button class="red" id="resetBtn">Reset draft</button>
+          <input type="file" id="importFile" accept="application/json" hidden>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script src="fad.js"></script>
+<script>
+'use strict';
+(() => {
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const HUB = FAD.hubOf(params);
+  const SEASON = +params.get('season') || 2026;
+  const LAY = { rx: 960, ry: 1030, rs: 0.9, by: 40, bs: 1, ck: 'tl' };
+  const DEF = () => ({
+    app: 'fad', room: 'tb-fadraft-' + Math.random().toString(36).slice(2, 7),
+    title: 'Free Agent Draft', sub: "Talkin' Baseball · 2026-27 offseason",
+    ds: [{ name: 'Jake', color: '#e8772e' }, { name: 'Trev', color: '#2f8fd8' }, { name: 'Jolly', color: '#1d7f45' }, { name: 'Rose', color: '#6b3fa0' }],
+    order: [0, 1, 2, 3], rounds: 8, picks: [], cur: null, stage: 0, view: 'reveal', focus: -1, clock: false, bg: 'clear', lay: { ...LAY },
+  });
+  const KEY = 'fad-state-v1';
+  let S;
+  try { S = Object.assign(DEF(), JSON.parse(localStorage.getItem(KEY) || 'null') || {}); } catch { S = DEF(); }
+  S.lay = { ...LAY, ...S.lay };
+  const hadLocal = !!localStorage.getItem(KEY);
+  if (params.get('room')) S.room = params.get('room');
+
+  // builder — local only, nothing goes to air until a step button is pressed
+  const B = { p: null, to: 0, yrs: 0, note: '', edit: null };
+  let POOL = [], EXTRA = [], STAND = {}, filter = 'all';
+
+  // ── transport ──
+  const net = (msg, cls) => { $('net').textContent = msg; $('net').className = cls || ''; };
+  const send = FAD.publisher(HUB, () => S.room, net);
+  let lastSig = '', timer = 0;
+  function commit() {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {}
+    render();
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const { room, ...wire } = S;
+      const sig = JSON.stringify(wire);
+      if (sig === lastSig) return;
+      lastSig = sig;
+      send({ ...wire, seq: Date.now() });
+    }, 140);
+  }
+  const toast = msg => { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2200); };
+
+  // ── preview: the same stage the display draws, scaled down ──
+  const stage = FAD.createStage($('pv'));
+  const fitPv = () => { stage.el.style.transform = `scale(${$('pv').clientWidth / 1920})`; };
+  new ResizeObserver(fitPv).observe($('pv'));
+
+  // ── helpers ──
+  const N = () => FAD.total(S);
+  const T = FAD.team;
+  const tagsHTML = t => (t || []).map(x => `<span class="tg ${x}">${x === 'AS' ? 'ALL-STAR' : x}</span>`).join('');
+  const draftedIds = () => new Set(S.picks.filter((p, i) => i !== B.edit).map(p => p.id));
+  function buildPick() {
+    if (!B.p) return null;
+    const n = B.edit ?? S.picks.length;
+    const s = FAD.slot(n, S.order);
+    const d = B.edit != null ? S.picks[B.edit].d : s.d;
+    const p = B.p;
+    return { n, d, round: B.edit != null ? S.picks[B.edit].round : s.round, id: p.id, first: p.first, last: p.last, name: p.name, pos: p.pos, age: p.age,
+      from: p.from, to: B.to || 0, yrs: B.yrs || 0, yrsNote: B.note || '', tags: p.tags || [],
+      sup: p.sup || [], line: p.line || '', lineYr: p.lineYr ?? null, war: p.lineYr === SEASON ? p.war : null, season: SEASON, toRec: B.to ? STAND[B.to] || null : null };
+  }
+  function clearBuilder() { B.p = null; B.to = 0; B.yrs = 0; B.note = ''; B.edit = null; $('yrsNote').value = ''; $('yrsN').value = ''; }
+
+  // ── render ──
+  function render() {
+    stage.render(S); fitPv();
+    const n = S.picks.length, done = n >= N();
+    // clock box
+    const cb = $('clockbox');
+    if (B.edit != null) {
+      const p = S.picks[B.edit];
+      cb.classList.add('edit'); cb.style.setProperty('--acc', S.ds[p.d].color);
+      $('cbLabel').textContent = 'EDITING A PICK'; $('cbName').textContent = S.ds[p.d].name;
+      $('cbRd').textContent = `ROUND ${p.round}`; $('cbNo').textContent = `#${p.n + 1}`;
+    } else if (done) {
+      cb.classList.remove('edit'); cb.style.setProperty('--acc', 'var(--gold)');
+      $('cbLabel').textContent = 'ALL PICKS IN'; $('cbName').textContent = 'Draft complete'; $('cbRd').textContent = ''; $('cbNo').textContent = `${n}`;
+    } else {
+      const s = FAD.slot(n, S.order);
+      cb.classList.remove('edit'); cb.style.setProperty('--acc', S.ds[s.d].color);
+      $('cbLabel').textContent = 'ON THE CLOCK'; $('cbName').textContent = S.ds[s.d].name;
+      $('cbRd').textContent = `RD ${s.round} · PK ${s.inRound}`; $('cbNo').textContent = `#${n + 1}`;
+    }
+    renderPool(); renderBuilder(); renderAir(); renderDs(); renderPicks();
+  }
+
+  function playerRow(p) {
+    const t = T(p.from);
+    return `<div class="pl${B.p && B.p.id === p.id ? ' sel' : ''}" data-id="${p.id}">
+      <div class="hs" style="--tc:${t.color}"><img loading="lazy" src="${FAD.headshot(p.id, 120)}" alt=""></div>
+      <div class="nm"><b>${FAD.esc(p.name)}${tagsHTML(p.tags)}</b><span>${FAD.esc(p.pos)}${p.age ? ' · ' + p.age : ''}${t.id ? ' · ' + t.abbr : ''}${p.note && !/waiver/i.test(p.note) ? ' · ' + FAD.esc(p.note) : ''}</span></div>
+      <div class="war">${p.war == null ? '—' : p.war.toFixed(1)}<small>WAR</small></div></div>`;
+  }
+  const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  function renderPool() {
+    const q = norm($('q').value.trim()), taken = draftedIds();
+    const keep = p => !taken.has(p.id) && (filter === 'all' || (filter === 'pit') === p.pitcher) && (!q || norm(p.name).includes(q));
+    const extra = EXTRA.filter(keep), pool = POOL.filter(keep);
+    let h = '';
+    if (extra.length) h += `<div class="pool-sep">ADDED FROM MLB SEARCH</div>` + extra.map(playerRow).join('');
+    if (extra.length && pool.length) h += `<div class="pool-sep">FREE AGENTS</div>`;
+    h += pool.map(playerRow).join('');
+    if (!h && POOL.length) h = `<div class="pad hint">Nobody on the free agent list matches. Try “Search all MLB players”.</div>`;
+    $('pool').innerHTML = h;
+    $('poolCount').textContent = POOL.length ? `${POOL.filter(p => !taken.has(p.id)).length} left` : '';
+  }
+
+  function renderBuilder() {
+    const pk = buildPick();
+    $('bTitle').textContent = B.edit != null ? `Editing pick #${B.edit + 1}` : 'The pick';
+    if (B.p) {
+      const t = T(B.p.from);
+      $('chosen').innerHTML = `<div class="hs" style="--tc:${t.color}"><img src="${FAD.headshot(B.p.id, 180)}" alt=""></div>
+        <div><b>${FAD.esc(B.p.name)}</b><span>${FAD.esc(B.p.pos)}${B.p.age ? ' · Age ' + B.p.age : ''}${t.id ? ' · last with ' + (t.city + ' ' + t.nick).trim() : ''}</span>
+        <div class="sl2">${B.p.lineYr ? B.p.lineYr + ': ' : ''}${FAD.esc(B.p.line || '')}${B.p.war != null && B.p.lineYr === SEASON ? ' · ' + B.p.war.toFixed(1) + ' WAR' : ''}</div><div class="sups">${(B.p.sup || []).map(x => `<i>${FAD.esc(x)}</i>`).join('') || '<i class="none">No major awards yet</i>'}</div></div>`;
+    } else $('chosen').innerHTML = `<div class="empty">Pick a player from the pool on the left.</div>`;
+    document.querySelectorAll('.tm').forEach(b => {
+      b.classList.toggle('on', +b.dataset.id === B.to);
+      b.classList.toggle('home', !!B.p && +b.dataset.id === B.p.from);
+    });
+    $('toLabel').textContent = B.to ? (B.p && B.to === B.p.from ? `stays with ${T(B.to).nick}` : `signs with ${T(B.to).nick}`) : 'pick a team';
+    document.querySelectorAll('.yrs button').forEach(b => b.classList.toggle('on', +b.dataset.y === B.yrs));
+    $('yrsLabel').textContent = B.yrs ? FAD.yrsText(B.yrs) : 'pick a length';
+    if (+$('yrsN').value !== B.yrs && document.activeElement !== $('yrsN')) $('yrsN').value = B.yrs > 10 ? B.yrs : '';
+    $('st1').disabled = !pk; $('st2').disabled = !pk || !pk.to; $('st3').disabled = !pk || !pk.to || !pk.yrs;
+    const live = S.view === 'reveal' && S.cur && pk && S.cur.id === pk.id && S.cur.n === pk.n ? S.stage : 0;
+    [1, 2, 3].forEach(k => $('st' + k).classList.toggle('live', live === k));
+    const full = !!(pk && pk.to && pk.yrs);
+    $('lockBtn').disabled = !full || (B.edit == null && S.picks.length >= N());
+    $('lockBtn').textContent = B.edit != null ? 'Save changes' : 'Lock in pick';
+    $('editRow').style.display = B.edit != null ? '' : 'none';
+    $('undoBtn').disabled = !S.picks.length || B.edit != null;
+  }
+
+  function renderAir() {
+    document.querySelectorAll('#air button').forEach(b => b.classList.toggle('on', b.dataset.v === (S.view === 'reveal' && !S.stage ? 'off' : S.view)));
+    $('airLabel').textContent = S.view === 'board' ? 'draft board' : S.view === 'reveal' && S.stage ? `reveal · step ${S.stage}` : 'nothing';
+    $('clockBtn').textContent = `On-the-clock bug: ${S.clock ? 'ON' : 'off'}`;
+    $('clockBtn').className = S.clock ? 'on' : 'plain';
+    $('ckPos').value = S.lay.ck; $('bg').value = S.bg;
+    const f = $('focus'), fo = `<option value="-1">Everybody</option>` + S.order.map(d => `<option value="${d}">${FAD.esc(S.ds[d].name)} only</option>`).join('');
+    if (f.dataset.sig !== fo) { f.innerHTML = fo; f.dataset.sig = fo; }
+    f.value = S.focus;
+    for (const k of ['rx', 'ry', 'rs', 'by', 'bs']) { $(k).value = S.lay[k]; $(k).nextElementSibling.textContent = k[1] === 's' ? Math.round(S.lay[k] * 100) + '%' : S.lay[k]; }
+  }
+
+  function renderDs() {
+    const host = $('dsList');
+    if (host.contains(document.activeElement) && document.activeElement.type === 'text') return;   // don't stomp typing
+    host.innerHTML = S.order.map((d, i) => `<div class="ds" data-d="${d}">
+      <span class="n">${i + 1}</span><input type="text" value="${FAD.esc(S.ds[d].name)}" data-k="name">
+      <button data-mv="-1" ${i ? '' : 'disabled'} title="Earlier pick">▲</button><button data-mv="1" ${i < S.order.length - 1 ? '' : 'disabled'} title="Later pick">▼</button>
+      <input type="color" value="${S.ds[d].color}" data-k="color"></div>`).join('');
+    $('rounds').value = S.rounds;
+    if (document.activeElement !== $('title')) $('title').value = S.title;
+    if (document.activeElement !== $('sub')) $('sub').value = S.sub;
+  }
+
+  function renderPicks() {
+    $('pickCount').textContent = `${S.picks.length} of ${N()}`;
+    let h = '', r = 0;
+    S.picks.forEach((p, i) => {
+      if (p.round !== r) { r = p.round; h += `<div class="rnd">ROUND ${r}</div>`; }
+      const to = T(p.to);
+      h += `<div class="pk${B.edit === i ? ' editing' : ''}" style="--acc:${S.ds[p.d].color}"><div class="no">#${i + 1}</div>
+        <div><div class="who">${FAD.esc(S.ds[p.d].name)}</div><div class="what">${FAD.esc(p.name)} → <img src="${FAD.logo(p.to)}" alt=""> ${to.abbr} · ${p.yrs} yr${p.yrs == 1 ? '' : 's'}${p.to === p.from ? ' · stays' : ''}</div></div>
+        <div class="row"><button data-show="${i}">Show</button><button class="plain" data-edit="${i}">Edit</button></div></div>`;
+    });
+    $('picks').innerHTML = h || `<div class="pad hint">No picks yet.</div>`;
+  }
+
+  // ── wiring ──
+  $('room').value = S.room;
+  $('room').addEventListener('change', () => { S.room = $('room').value.trim().replace(/\s+/g, '-') || DEF().room; $('room').value = S.room; lastSig = ''; commit(); });
+  const outUrl = () => new URL('display.html', location.href.split('#')[0].split('?')[0]).href + '?room=' + encodeURIComponent(S.room) + (params.get('hub') ? '&hub=' + encodeURIComponent(HUB) : '');
+  $('copyUrl').onclick = async () => { try { await navigator.clipboard.writeText(outUrl()); toast('OBS link copied — Browser Source, 1920 × 1080'); } catch { prompt('Copy this into the OBS Browser Source:', outUrl()); } };
+  $('openOut').onclick = () => open(outUrl(), 'fad-display');
+
+  // pool
+  $('q').addEventListener('input', renderPool);
+  $('q').addEventListener('keydown', e => { if (e.key === 'Enter') { const first = $('pool').querySelector('.pl'); if (first) first.click(); else $('mlbSearch').click(); } });
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+    filter = b.dataset.f; document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b)); renderPool();
+  });
+  $('pool').addEventListener('click', e => {
+    const row = e.target.closest('.pl'); if (!row) return;
+    const id = +row.dataset.id, p = POOL.find(x => x.id === id) || EXTRA.find(x => x.id === id);
+    if (!p) return;
+    if (!B.p || B.p.id !== p.id) { B.p = p; B.to = 0; }
+    render();
+  });
+  $('mlbSearch').onclick = async () => {
+    const q = $('q').value.trim();
+    if (q.length < 2) { toast('Type at least two letters of a name first'); $('q').focus(); return; }
+    $('poolMsg').textContent = `Searching MLB for “${q}”…`;
+    const res = await FAD.search(q, SEASON);
+    const have = new Set(POOL.concat(EXTRA).map(p => p.id));
+    const add = res.filter(p => !have.has(p.id));
+    EXTRA = add.concat(EXTRA);
+    $('poolMsg').textContent = res.length ? (add.length ? `Added ${add.length} from MLB search.` : 'Already in the list.') : `Nobody active in MLB matches “${q}”.`;
+    renderPool();
+  };
+
+  // teams + years
+  $('teams').innerHTML = FAD.TEAM_IDS.map(id => `<button class="tm" data-id="${id}" title="${T(id).city} ${T(id).nick}"><img src="${FAD.logo(id)}" alt=""><span>${T(id).abbr}</span></button>`).join('');
+  $('teams').onclick = e => { const b = e.target.closest('.tm'); if (!b || !B.p) { if (!B.p) toast('Pick a player first'); return; } B.to = +b.dataset.id === B.to ? 0 : +b.dataset.id; render(); };
+  $('yrs').innerHTML = Array.from({ length: 10 }, (_, i) => `<button data-y="${i + 1}">${i + 1}</button>`).join('');
+  $('yrs').onclick = e => { const b = e.target.closest('button'); if (!b) return; B.yrs = +b.dataset.y === B.yrs ? 0 : +b.dataset.y; $('yrsN').value = ''; render(); };
+  $('yrsN').oninput = () => { const v = Math.max(0, Math.min(15, Math.round(+$('yrsN').value || 0))); B.yrs = v; render(); };
+  $('yrsNote').oninput = () => { B.note = $('yrsNote').value.trim().slice(0, 40); };
+
+  // reveal steps — each press sends a snapshot of the pick as it stands
+  function step(k) {
+    if (k === 0) { S.stage = 0; return commit(); }
+    const pk = buildPick();
+    if (!pk || (k >= 2 && !pk.to) || (k >= 3 && !pk.yrs)) return;
+    S.cur = pk; S.stage = k; S.view = 'reveal'; commit();
+  }
+  [0, 1, 2, 3].forEach(k => $('st' + k).onclick = () => step(k));
+  $('lockBtn').onclick = () => {
+    const pk = buildPick(); if (!pk || !pk.to || !pk.yrs) return;
+    if (B.edit != null) { S.picks[B.edit] = pk; toast(`Pick #${pk.n + 1} updated`); }
+    else { S.picks.push(pk); toast(`${S.ds[pk.d].name} takes ${pk.name}`); }
+    if (S.cur && S.cur.n === pk.n) S.cur = pk;
+    clearBuilder(); $('q').value = ''; commit();
+  };
+  $('cancelEdit').onclick = () => { clearBuilder(); render(); };
+  $('clearB').onclick = () => { clearBuilder(); render(); };
+  $('undoBtn').onclick = () => {
+    const p = S.picks[S.picks.length - 1]; if (!p) return;
+    if (!confirm(`Take back pick #${p.n + 1} — ${S.ds[p.d].name}: ${p.name}?`)) return;
+    S.picks.pop();
+    if (S.cur && S.cur.n === p.n) S.stage = 0;
+    B.p = POOL.find(x => x.id === p.id) || EXTRA.find(x => x.id === p.id) || null; B.to = p.to; B.yrs = p.yrs; B.note = p.yrsNote || ''; $('yrsNote').value = B.note;
+    commit();
+  };
+  $('picks').onclick = e => {
+    const s = e.target.closest('[data-show]'), ed = e.target.closest('[data-edit]');
+    if (s) { S.cur = S.picks[+s.dataset.show]; S.stage = 3; S.view = 'reveal'; commit(); }
+    if (ed) {
+      const i = +ed.dataset.edit, p = S.picks[i];
+      B.edit = i; B.p = POOL.find(x => x.id === p.id) || EXTRA.find(x => x.id === p.id) || { ...p };
+      B.to = p.to; B.yrs = p.yrs; B.note = p.yrsNote || ''; $('yrsNote').value = B.note; render();
+      scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // on air
+  $('air').onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const v = b.dataset.v;
+    if (v === 'off') { S.view = 'reveal'; S.stage = 0; }
+    else if (v === 'reveal') { S.view = 'reveal'; if (!S.stage && S.cur) S.stage = 3; }
+    else S.view = 'board';
+    commit();
+  };
+  $('focus').onchange = () => { S.focus = +$('focus').value; commit(); };
+  $('clockBtn').onclick = () => { S.clock = !S.clock; commit(); };
+  $('ckPos').onchange = () => { S.lay.ck = $('ckPos').value; commit(); };
+  $('bg').onchange = () => { S.bg = $('bg').value; commit(); };
+  for (const k of ['rx', 'ry', 'rs', 'by', 'bs']) $(k).oninput = () => { S.lay[k] = +$(k).value; commit(); };
+  $('layReset').onclick = () => { S.lay = { ...LAY, ck: S.lay.ck }; commit(); };
+
+  // contestants
+  $('dsList').addEventListener('input', e => {
+    const row = e.target.closest('.ds'); if (!row) return;
+    const d = +row.dataset.d, k = e.target.dataset.k;
+    S.ds[d][k] = k === 'name' ? e.target.value.slice(0, 18) : e.target.value;
+    commit();
+  });
+  $('dsList').addEventListener('change', e => { if (e.target.dataset.k === 'name') { const d = +e.target.closest('.ds').dataset.d; if (!S.ds[d].name.trim()) S.ds[d].name = `Player ${d + 1}`; renderDs(); } });
+  $('dsList').addEventListener('click', e => {
+    const b = e.target.closest('[data-mv]'); if (!b) return;
+    const d = +b.closest('.ds').dataset.d, i = S.order.indexOf(d), j = i + +b.dataset.mv;
+    if (j < 0 || j >= S.order.length) return;
+    if (S.picks.length && !confirm('Picks are already in. Changing the order moves who is up for every pick still to come. Change it?')) return;
+    [S.order[i], S.order[j]] = [S.order[j], S.order[i]];
+    commit();
+  });
+  $('rounds').onchange = () => { S.rounds = Math.max(1, Math.min(20, Math.round(+$('rounds').value || 8))); if (S.picks.length > N()) S.rounds = Math.ceil(S.picks.length / S.order.length); commit(); };
+  $('title').oninput = () => { S.title = $('title').value; commit(); };
+  $('sub').oninput = () => { S.sub = $('sub').value; commit(); };
+
+  // backup
+  $('exportBtn').onclick = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' }));
+    a.download = `fa-draft-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+  };
+  $('importBtn').onclick = () => $('importFile').click();
+  $('importFile').onchange = async () => {
+    const f = $('importFile').files[0]; if (!f) return;
+    try { const j = JSON.parse(await f.text()); if (j.app !== 'fad') throw 0; S = Object.assign(DEF(), j, { room: S.room }); S.lay = { ...LAY, ...S.lay }; clearBuilder(); commit(); toast(`Loaded ${S.picks.length} picks`); }
+    catch { toast('That file isn’t a Free Agent Draft backup'); }
+    $('importFile').value = '';
+  };
+  async function pull(quiet) {
+    try {
+      const j = await FAD.fetchRoom(HUB, S.room);
+      if (!j || j.app !== 'fad') { if (!quiet) toast('Nothing saved on the relay for this room yet'); return; }
+      const { seq, ...rest } = j;
+      S = Object.assign(DEF(), rest, { room: S.room }); S.lay = { ...LAY, ...S.lay }; clearBuilder(); render();
+      try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {}
+      toast(`Pulled ${S.picks.length} picks from the relay`);
+    } catch { if (!quiet) toast('Relay unreachable'); }
+  }
+  $('pullBtn').onclick = () => { if (!S.picks.length || confirm('Replace this page’s draft with what the relay has?')) pull(false); };
+  $('resetBtn').onclick = () => {
+    if (!confirm('Wipe every pick and start the draft over? (Names, order and layout stay.) Save a backup first if you might want it.')) return;
+    S.picks = []; S.cur = null; S.stage = 0; clearBuilder(); commit();
+  };
+
+  // keys
+  addEventListener('keydown', e => {
+    if (e.target.matches('input, select, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === '1' || e.key === '2' || e.key === '3') step(+e.key);
+    else if (e.key === 'h' || e.key === 'H') step(0);
+    else if (e.key === 'b' || e.key === 'B') { S.view = S.view === 'board' ? 'reveal' : 'board'; commit(); }
+  });
+
+  // boot
+  render();
+  if (!hadLocal) pull(true);
+  FAD.loadStandings(SEASON).then(st => { STAND = st; }).catch(() => {});
+  FAD.loadPool(SEASON, msg => { $('poolMsg').textContent = msg; })
+    .then(pool => { POOL = pool.sort((a, b) => (b.war ?? -99) - (a.war ?? -99) || a.last.localeCompare(b.last)); $('poolMsg').textContent = `${POOL.length} free agents from MLB, best ${SEASON} WAR first.`; renderPool(); })
+    .catch(() => { $('poolMsg').textContent = 'Couldn’t reach MLB for the free agent list — “Search all MLB players” still works.'; });
+})();
+</script>
+</body>
+</html>

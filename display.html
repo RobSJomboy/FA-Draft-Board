@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Agent Draft · Display</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fad.css">
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  #wait { position: fixed; left: 24px; bottom: 20px; font: 600 16px 'Barlow Condensed', sans-serif; color: #5d6e82; letter-spacing: .08em; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="wait"></div>
+<script src="fad.js"></script>
+<script>
+'use strict';
+// OBS Browser Source (1920×1080):  display.html?room=<room>
+//   &view=board   always show the board (a follow-along screen), whatever the control is doing
+//   &bg=paper     cream background instead of transparent
+(() => {
+  const params = new URLSearchParams(location.search);
+  const ROOM = params.get('room') || '';
+  const stage = FAD.createStage(document.getElementById('app'));
+  const fit = () => { stage.el.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080) || 1})`; };
+  addEventListener('resize', fit); fit();
+
+  // A Browser Source that isn't being rendered stops the animation clock and every
+  // entrance would freeze at opacity 0. If the timeline stalls, paint end states instead.
+  let t0 = document.timeline.currentTime;
+  setInterval(() => {
+    const t = document.timeline.currentTime;
+    document.documentElement.classList.toggle('no-anim', t === t0);
+    t0 = t;
+  }, 1500);
+
+  const wait = document.getElementById('wait');
+  let lastSeq = 0;
+  function apply(s) {
+    if (!s || s.app !== 'fad' || !(s.seq > lastSeq)) return;
+    lastSeq = s.seq;
+    wait.style.display = 'none';
+    if (params.get('view') === 'board') { s.view = 'board'; s.lay = { ...s.lay, by: 60, bs: 1 }; }
+    if (params.get('bg')) s.bg = params.get('bg');
+    document.fonts.ready.then(() => stage.render(s));
+  }
+  if (!ROOM) wait.textContent = 'NO ROOM — COPY THE OBS LINK FROM THE CONTROL PAGE';
+  else FAD.subscribe(FAD.hubOf(params), ROOM, apply);
+})();
+</script>
+</body>
+</html>
