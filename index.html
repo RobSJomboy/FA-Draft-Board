@@ -189,12 +189,12 @@
           <span class="k">Note</span><input type="text" id="yrsNote" placeholder="optional · e.g. opt-out after yr 2" style="flex:1">
         </div>
       </div>
-      <h2>Reveal <small><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> step · <kbd>H</kbd> hide</small></h2>
+      <h2>Reveal <small>player &amp; team go on air when clicked · <kbd>3</kbd> contract · <kbd>H</kbd> hide</small></h2>
       <div class="pad">
         <div class="steps">
-          <button id="st1"><em>STEP 1</em>Player + arrow</button>
-          <button id="st2"><em>STEP 2</em>Team logo</button>
-          <button id="st3"><em>STEP 3</em>Contract</button>
+          <button id="st1"><em>ON CLICK</em>Player + arrow</button>
+          <button id="st2"><em>ON CLICK</em>Team logo</button>
+          <button id="st3"><em>PRESS TO SHOW</em>Contract</button>
           <button class="plain" id="st0"><em>&nbsp;</em>Hide</button>
         </div>
         <div class="row" style="margin-top:12px"><button class="gold lock" id="lockBtn">Lock in pick</button></div>
@@ -456,7 +456,7 @@
     const id = +row.dataset.id, p = POOL.find(x => x.id === id) || EXTRA.find(x => x.id === id);
     if (!p) return;
     if (!B.p || B.p.id !== p.id) { B.p = p; B.to = 0; }
-    render();
+    step(1);                               // clicking a player puts him on air straight away
   });
   $('mlbSearch').onclick = async () => {
     const q = $('q').value.trim();
@@ -472,7 +472,7 @@
 
   // teams + years
   $('teams').innerHTML = FAD.TEAM_IDS.map(id => `<button class="tm" data-id="${id}" title="${T(id).city} ${T(id).nick}"><img src="${FAD.logo(id)}" alt=""><span>${T(id).abbr}</span></button>`).join('');
-  $('teams').onclick = e => { const b = e.target.closest('.tm'); if (!b || !B.p) { if (!B.p) toast('Pick a player first'); return; } B.to = +b.dataset.id === B.to ? 0 : +b.dataset.id; render(); };
+  $('teams').onclick = e => { const b = e.target.closest('.tm'); if (!b || !B.p) { if (!B.p) toast('Pick a player first'); return; } B.to = +b.dataset.id === B.to ? 0 : +b.dataset.id; step(B.to ? 2 : 1); };   // logo goes on air with the click
   $('yrs').innerHTML = Array.from({ length: 10 }, (_, i) => `<button data-y="${i + 1}">${i + 1}</button>`).join('');
   $('yrs').onclick = e => { const b = e.target.closest('button'); if (!b) return; B.yrs = +b.dataset.y === B.yrs ? 0 : +b.dataset.y; $('yrsN').value = ''; render(); };
   $('yrsN').oninput = () => { const v = Math.max(0, Math.min(15, Math.round(+$('yrsN').value || 0))); B.yrs = v; render(); };
