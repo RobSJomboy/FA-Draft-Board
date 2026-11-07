@@ -83,7 +83,25 @@
   .pl .war small { display: block; font: 600 11px var(--cond); letter-spacing: .12em; color: #5d6e82; }
   .tg { display: inline-block; font: 700 11px/1 var(--cond); letter-spacing: .08em; padding: 2px 4px 1px; background: var(--ink); color: var(--paper); margin-left: 4px; vertical-align: 2px; }
   .tg.AS { background: var(--gold); color: var(--ink); }
-  .tg.CY, .tg.MVP { background: var(--red); }
+  .tg.CY, .tg.MVP, .tg.ROY { background: var(--red); }
+  .tg.QO { background: #5d6e82; }
+  .clockbox .lim { font: 700 14px var(--cond); letter-spacing: .1em; color: var(--tan); margin-top: 5px; }
+  .clockbox .lim b { display: inline; font: inherit; color: var(--paper); }
+  .clockbox .lim b.full { color: #ff9a9a; }
+  #ruleWarn { margin-top: 8px; background: #fbe3e5; border-left: 6px solid var(--red); padding: 7px 10px; font: 600 15px var(--cond); letter-spacing: .03em; color: var(--red-dk); }
+  #ruleWarn:empty { display: none; }
+  /* rules popout */
+  #rulesDlg { border: 4px solid var(--ink); padding: 0; background: var(--paper); color: var(--ink); max-width: 640px; width: calc(100% - 32px); box-shadow: 10px 10px 0 rgba(15,39,66,.35); }
+  #rulesDlg::backdrop { background: rgba(15,39,66,.55); }
+  #rulesDlg .hd { background: var(--navy); color: var(--paper); border-bottom: 5px solid var(--gold); display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; }
+  #rulesDlg .hd b { font: 700 28px/1 var(--head); text-transform: uppercase; letter-spacing: .03em; }
+  #rulesDlg table { width: 100%; border-collapse: collapse; }
+  #rulesDlg td { padding: 9px 14px; border-bottom: 2px solid var(--line); font: 600 17px/1.25 'Barlow', sans-serif; vertical-align: middle; }
+  #rulesDlg td small { display: block; font: 600 14px var(--cond); letter-spacing: .04em; color: #5d6e82; text-transform: uppercase; margin-top: 2px; }
+  #rulesDlg td.pt { width: 70px; text-align: center; font: 700 34px/1 var(--head); }
+  #rulesDlg tr.sec td { background: var(--paper2); font: 700 17px var(--head); letter-spacing: .12em; text-transform: uppercase; padding: 7px 14px; }
+  #rulesDlg tr.lim td { background: #fff3c4; font-weight: 700; text-align: center; }
+  #rulesDlg .ex { padding: 10px 14px 14px; font: 500 14px/1.35 'Barlow', sans-serif; color: #5d6e82; }
   .pool-sep { font: 700 13px var(--cond); letter-spacing: .14em; background: var(--paper2); padding: 5px 10px; border-bottom: 1px solid var(--line); }
 
   /* builder */
@@ -152,6 +170,7 @@
     <label for="room">ROOM</label><input type="text" id="room" spellcheck="false">
     <button id="copyUrl">Copy OBS link</button>
     <button id="openOut">Open display</button>
+    <button class="gold" id="rulesBtn">Rules</button>
     <span id="net">not sent yet</span>
   </div>
 </header>
@@ -159,7 +178,7 @@
 <main>
   <!-- ── column 1: on the clock + player pool ── -->
   <section class="col1">
-    <div class="clockbox" id="clockbox"><div class="bar"></div><div class="main"><small id="cbLabel">ON THE CLOCK</small><b id="cbName"></b></div><div class="pk"><small id="cbRd"></small><b id="cbNo"></b></div></div>
+    <div class="clockbox" id="clockbox"><div class="bar"></div><div class="main"><small id="cbLabel">ON THE CLOCK</small><b id="cbName"></b><div class="lim" id="cbLim"></div></div><div class="pk"><small id="cbRd"></small><b id="cbNo"></b></div></div>
     <div class="box">
       <h2>Free agent pool <small id="poolCount"></small></h2>
       <div class="pad">
@@ -198,6 +217,7 @@
           <button class="plain" id="st0"><em>&nbsp;</em>Hide</button>
         </div>
         <div class="row" style="margin-top:12px"><button class="gold lock" id="lockBtn">Lock in pick</button></div>
+        <div id="ruleWarn"></div>
         <div class="row" id="editRow" style="display:none"><button class="plain" id="cancelEdit" style="flex:1">Cancel edit</button></div>
         <div class="row"><button class="plain" id="undoBtn" style="flex:1">Undo last pick</button><button class="plain" id="clearB" style="flex:1">Clear the pick</button></div>
       </div>
@@ -261,6 +281,20 @@
   </section>
 </main>
 <div class="toast" id="toast"></div>
+<dialog id="rulesDlg">
+  <div class="hd"><b>Rules</b><button class="plain" id="rulesClose">Close</button></div>
+  <table>
+    <tr><td>Correct player / team match <small>new team</small></td><td class="pt">10</td></tr>
+    <tr><td>Correct player / team match <small>re-signing with his old team</small></td><td class="pt">5</td></tr>
+    <tr><td>Correct contract length <small>don't need the right team</small></td><td class="pt">5</td></tr>
+    <tr class="sec"><td colspan="2">Bonus points · need the correct team / player match</td></tr>
+    <tr><td>Player has won a major award <small>Cy Young, MVP or Rookie of the Year</small></td><td class="pt">5</td></tr>
+    <tr><td>Player was a <span id="asYr"></span> All-Star</td><td class="pt">5</td></tr>
+    <tr class="lim"><td colspan="2">Only 2 re-signings max (1 QO accepting / returning max)</td></tr>
+    <tr class="lim"><td colspan="2">No more than 2 selections that are 1-year deals</td></tr>
+  </table>
+  <div class="ex">Snake draft, 1-2-3-4-4-3-2-1, 8 picks each. In the player list, <span class="tg MVP">MVP</span> <span class="tg CY">CY</span> <span class="tg ROY">ROY</span> <span class="tg AS">ALL-STAR</span> mark bonus players and <span class="tg QO">QO</span> marks a player who got a qualifying offer. The page warns you before a pick breaks a limit.</div>
+</dialog>
 
 <script src="fad.js"></script>
 <script>
@@ -314,7 +348,24 @@
   // ── helpers ──
   const N = () => FAD.total(S);
   const T = FAD.team;
-  const tagsHTML = t => (t || []).map(x => `<span class="tg ${x}">${x === 'AS' ? 'ALL-STAR' : x}</span>`).join('');
+  const tagsHTML = (t, qo) => (t || []).map(x => `<span class="tg ${x}">${x === 'AS' ? 'ALL-STAR' : x}</span>`).join('') + (qo ? '<span class="tg QO">QO</span>' : '');
+  const isQO = p => !!(p && (p.qo || /qualifying offer/i.test(p.note || '')));
+
+  // ── draft limits (from the rules sheet) ──
+  const LIMIT = { re: 2, qo: 1, one: 2 };
+  function usage(d, skip) {
+    const ps = S.picks.filter((p, i) => p.d === d && i !== skip), back = ps.filter(p => p.to && p.to === p.from);
+    return { re: back.length, qo: back.filter(p => p.qo).length, one: ps.filter(p => +p.yrs === 1).length };
+  }
+  function ruleIssues(pk) {
+    if (!pk) return [];
+    const u = usage(pk.d, B.edit ?? -1), who = S.ds[pk.d].name, out = [];
+    const re = pk.to && pk.to === pk.from;
+    if (re && u.re >= LIMIT.re) out.push(`${who} already has ${u.re} re-signings — max is ${LIMIT.re}.`);
+    if (re && pk.qo && u.qo >= LIMIT.qo) out.push(`${who} already has a QO player returning — max is ${LIMIT.qo}.`);
+    if (+pk.yrs === 1 && u.one >= LIMIT.one) out.push(`${who} already has ${u.one} one-year deals — max is ${LIMIT.one}.`);
+    return out;
+  }
   const draftedIds = () => new Set(S.picks.filter((p, i) => i !== B.edit).map(p => p.id));
   function buildPick() {
     if (!B.p) return null;
@@ -323,7 +374,7 @@
     const d = B.edit != null ? S.picks[B.edit].d : s.d;
     const p = B.p;
     return { n, d, round: B.edit != null ? S.picks[B.edit].round : s.round, id: p.id, first: p.first, last: p.last, name: p.name, pos: p.pos, age: p.age,
-      from: p.from, to: B.to || 0, yrs: B.yrs || 0, yrsNote: B.note || '', tags: p.tags || [],
+      from: p.from, to: B.to || 0, yrs: B.yrs || 0, yrsNote: B.note || '', tags: p.tags || [], qo: isQO(p),
       sup: p.sup || [], line: p.line || '', lineYr: p.lineYr ?? null, war: p.lineYr === SEASON ? p.war : null, season: SEASON, toRec: B.to ? STAND[B.to] || null : null };
   }
   function clearBuilder() { B.p = null; B.to = 0; B.yrs = 0; B.note = ''; B.edit = null; $('yrsNote').value = ''; $('yrsN').value = ''; }
@@ -348,6 +399,13 @@
       $('cbLabel').textContent = 'ON THE CLOCK'; $('cbName').textContent = S.ds[s.d].name;
       $('cbRd').textContent = `RD ${s.round} · PK ${s.inRound}`; $('cbNo').textContent = `#${n + 1}`;
     }
+    // limits for whoever is up (or whose pick is being edited)
+    const ld = B.edit != null ? S.picks[B.edit].d : done ? null : FAD.slot(n, S.order).d;
+    if (ld == null) $('cbLim').innerHTML = '';
+    else {
+      const u = usage(ld, B.edit ?? -1), f = (v, m) => `<b class="${v >= m ? 'full' : ''}">${v}/${m}</b>`;
+      $('cbLim').innerHTML = `RE-SIGNS ${f(u.re, LIMIT.re)} · QO ${f(u.qo, LIMIT.qo)} · 1-YR DEALS ${f(u.one, LIMIT.one)}`;
+    }
     renderPool(); renderBuilder(); renderAir(); renderDs(); renderPicks();
   }
 
@@ -355,7 +413,7 @@
     const t = T(p.from);
     return `<div class="pl${B.p && B.p.id === p.id ? ' sel' : ''}" data-id="${p.id}">
       <div class="hs" style="--tc:${t.color}"><img loading="lazy" src="${FAD.headshot(p.id, 120)}" alt=""></div>
-      <div class="nm"><b>${FAD.esc(p.name)}${tagsHTML(p.tags)}</b><span>${FAD.esc(p.pos)}${p.age ? ' · ' + p.age : ''}${t.id ? ' · ' + t.abbr : ''}${p.note && !/waiver/i.test(p.note) ? ' · ' + FAD.esc(p.note) : ''}</span></div>
+      <div class="nm"><b>${FAD.esc(p.name)}${tagsHTML(p.tags, isQO(p))}</b><span>${FAD.esc(p.pos)}${p.age ? ' · ' + p.age : ''}${t.id ? ' · ' + t.abbr : ''}${p.note && !/waiver/i.test(p.note) ? ' · ' + FAD.esc(p.note) : ''}</span></div>
       <div class="war">${p.war == null ? '—' : p.war.toFixed(1)}<small>WAR</small></div></div>`;
   }
   const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -396,6 +454,7 @@
     $('lockBtn').disabled = !full || (B.edit == null && S.picks.length >= N());
     $('lockBtn').textContent = B.edit != null ? 'Save changes' : 'Lock in pick';
     $('editRow').style.display = B.edit != null ? '' : 'none';
+    $('ruleWarn').innerHTML = ruleIssues(pk).map(FAD.esc).join('<br>');
     $('undoBtn').disabled = !S.picks.length || B.edit != null;
   }
 
@@ -444,6 +503,10 @@
   const outUrl = () => new URL('display.html', location.href.split('#')[0].split('?')[0]).href + '?room=' + encodeURIComponent(S.room) + (params.get('hub') ? '&hub=' + encodeURIComponent(HUB) : '');
   $('copyUrl').onclick = async () => { try { await navigator.clipboard.writeText(outUrl()); toast('OBS link copied — Browser Source, 1920 × 1080'); } catch { prompt('Copy this into the OBS Browser Source:', outUrl()); } };
   $('openOut').onclick = () => open(outUrl(), 'fad-display');
+  $('asYr').textContent = SEASON;
+  $('rulesBtn').onclick = () => $('rulesDlg').showModal();
+  $('rulesClose').onclick = () => $('rulesDlg').close();
+  $('rulesDlg').addEventListener('click', e => { if (e.target === $('rulesDlg')) $('rulesDlg').close(); });
 
   // pool
   $('q').addEventListener('input', renderPool);
@@ -488,6 +551,8 @@
   [0, 1, 2, 3].forEach(k => $('st' + k).onclick = () => step(k));
   $('lockBtn').onclick = () => {
     const pk = buildPick(); if (!pk || !pk.to || !pk.yrs) return;
+    const issues = ruleIssues(pk);
+    if (issues.length && !confirm(issues.join('\n') + '\n\nLock it in anyway?')) return;
     if (B.edit != null) { S.picks[B.edit] = pk; toast(`Pick #${pk.n + 1} updated`); }
     else { S.picks.push(pk); toast(`${S.ds[pk.d].name} takes ${pk.name}`); }
     if (S.cur && S.cur.n === pk.n) S.cur = pk;
@@ -585,7 +650,7 @@
 
   // keys
   addEventListener('keydown', e => {
-    if (e.target.matches('input, select, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target.matches('input, select, textarea') || e.metaKey || e.ctrlKey || e.altKey || $('rulesDlg').open) return;
     if (e.key === '1' || e.key === '2' || e.key === '3') step(+e.key);
     else if (e.key === 'h' || e.key === 'H') step(0);
     else if (e.key === 'b' || e.key === 'B') { S.view = S.view === 'board' ? 'reveal' : 'board'; commit(); }

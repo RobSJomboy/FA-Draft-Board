@@ -19,4 +19,14 @@ Sync runs over the Jomboy relay (`jomboy-relay.jomboymedia.workers.dev`), same a
 
 Picks save in the browser and on the relay. **Save backup** downloads a JSON file. **Pull from relay** loads the draft on a second computer.
 
-No scoring yet. Each pick keeps the team, the years, and the MVP / Cy Young / 2026 All-Star tags, so points can be added once players start signing.
+## Rules (the **Rules** button on the control page)
+- 10 — correct player/team match, new team
+- 5 — correct player/team match, re-signing
+- 5 — correct contract length (team doesn't need to be right)
+- Bonus +5 — player has won a major award (Cy Young, MVP, ROY), needs the right team
+- Bonus +5 — player was an All-Star this past season, needs the right team
+- Max 2 re-signings per person (max 1 of them a QO player returning)
+- Max 2 one-year deals per person
+
+The control page tracks each person's re-signings, QO returns and one-year deals, and warns before a pick breaks a limit.
+Scoring isn't automatic yet; picks keep the team, years and award tags so it can be added once players sign.

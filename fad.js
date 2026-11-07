@@ -44,7 +44,8 @@ const FAD = (() => {
   }
   const total = S => S.order.length * S.rounds;
   const yrsText = y => y ? `${y} YEAR${y == 1 ? '' : 'S'}` : '';
-  const TAGS = { MVP: 'Former MVP', CY: 'Former Cy Young', AS: 'All-Star' };   // scoring bonuses: +2 MVP/CY, +1 this year's All-Star
+  // scoring bonuses (only with the right team): +5 for a major award (Cy Young, MVP, ROY), +5 for an All-Star this past season
+  const TAGS = { MVP: 'Former MVP', CY: 'Former Cy Young', ROY: 'Former ROY', AS: 'All-Star' };
 
   // ════════════════════════════════════════════════════════════════════
   //  DATA — the free-agent pool (control page only)
@@ -94,6 +95,7 @@ const FAD = (() => {
     const aw = p.awards || [];
     if (aw.some(a => /^(AL|NL)MVP$/.test(a.id))) tags.push('MVP');
     if (aw.some(a => /^(AL|NL)CY$/.test(a.id))) tags.push('CY');
+    if (aw.some(a => /^(AL|NL)ROY$/.test(a.id))) tags.push('ROY');
     if (aw.some(a => /^(AL|NL)AS$/.test(a.id) && +a.season === season)) tags.push('AS');
     const pitcher = p.primaryPosition?.type === 'Pitcher';
     let pos = meta.pos && meta.pos !== 'P' ? meta.pos : p.primaryPosition?.abbreviation || '';
