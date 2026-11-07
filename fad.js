@@ -207,6 +207,21 @@ const FAD = (() => {
       while (node.scrollWidth > w && fs > max * .5) { fs -= 2; node.style.fontSize = fs + 'px'; }
     }
 
+    // board names: shrink the type to a floor, then squeeze sideways — never cut a name off
+    function fitNames(root) {
+      root.querySelectorAll('b > span').forEach(sp => {
+        const box = sp.parentElement, w = box.clientWidth;
+        sp.style.fontSize = ''; sp.style.transform = '';
+        if (!w) return;
+        let fs = parseFloat(getComputedStyle(sp).fontSize);
+        const floor = fs * .72;
+        while (sp.offsetWidth > w && fs > floor) { fs -= .5; sp.style.fontSize = fs + 'px'; }
+        if (sp.offsetWidth > w) sp.style.transform = `scaleX(${(w / sp.offsetWidth).toFixed(3)})`;
+      });
+    }
+    const refit = () => { fitNames($('.bs-grid')); fitNames($('.bd-grid')); };
+    document.fonts && document.fonts.ready.then(refit);
+
     function renderReveal(S) {
       const c = S.cur, on = S.view === 'reveal' && c && S.stage > 0;
       const L = S.lay;
@@ -267,9 +282,9 @@ const FAD = (() => {
       const from = team(p.from), to = team(p.to), stays = p.to && p.to === p.from;
       return `<div class="cell filled${n === S.picks.length - 1 && S.picks.length > lastPicks ? ' fresh' : ''}" style="--acc:${esc(S.ds[p.d]?.color)}">
         <div class="hs" style="--tc:${from.color}"><img src="${headshot(p.id, 180)}" alt=""></div>
-        <div class="nm"><b>${esc(p.last || p.name)}</b><span>${esc(p.pos)}${from.id ? ' · ' + from.abbr : ''}</span></div>
+        <div class="nm"><b><span>${esc(p.last || p.name)}</span></b><span>${esc(p.pos)}${from.id ? ' · ' + from.abbr : ''}</span></div>
         <div class="to">${MINI('#c8102e')}<div class="lg">${p.to ? `<img src="${logo(p.to)}" alt="">` : ''}</div></div>
-        ${stays ? '<span class="stay">STAYS</span>' : `<span class="no">${no}</span>`}
+        <span class="no">${no}</span>${stays ? '<span class="stay">STAYS</span>' : ''}
         ${p.yrs ? `<span class="yr">${p.yrs} YR${p.yrs == 1 ? '' : 'S'}</span>` : ''}
       </div>`;
     }
@@ -289,7 +304,7 @@ const FAD = (() => {
       const from = team(p.from), stays = p.to && p.to === p.from;
       return `<div class="sc filled${n === S.picks.length - 1 && S.picks.length > bsLast ? ' fresh' : ''}${stays ? ' stays' : ''}">
         <div class="ic"><div class="hs" style="--tc:${from.color}"><img src="${headshot(p.id, 120)}" alt=""></div>${MINI('#c8102e')}<div class="lg">${p.to ? `<img src="${logo(p.to)}" alt="">` : ''}</div></div>
-        <b>${esc(p.last || p.name)}</b>${p.yrs ? `<i>${p.yrs}Y</i>` : ''}</div>`;
+        <b><span>${esc(p.last || p.name)}</span></b><u>#${n + 1}</u>${p.yrs ? `<i>${p.yrs}Y</i>` : ''}</div>`;
     }
     function renderStrip(S) {
       const on = S.view === 'board' && S.bstyle !== 'full';
@@ -315,6 +330,7 @@ const FAD = (() => {
           c.nums.map((n, r) => stripCell(c.picks[r], n, S, n === next)).join('')).join('');
       }
       bsLast = S.picks.length;
+      fitNames(grid);
     }
 
     function renderBoard(S) {
@@ -348,6 +364,7 @@ const FAD = (() => {
         grid.innerHTML = h;
       }
       lastPicks = S.picks.length;
+      fitNames(grid);
     }
 
     function renderClock(S) {
